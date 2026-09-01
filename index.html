@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PE Mile Scanner</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 5px;
+    }
+
+    #message {
+      font-size: 22px;
+      margin: 15px 0;
+      min-height: 30px;
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 500px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    button {
+      font-size: 22px;
+      padding: 15px 30px;
+      margin: 10px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    #startCamera {
+      background: #1565c0;
+      color: white;
+    }
+
+    #stopCamera {
+      background: #c62828;
+      color: white;
+    }
+
+    #result {
+      font-size: 28px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+  </style>
+
+  <!-- QR scanner library -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+</head>
+
+<body>
+
+  <h1>PE MILE SCANNER</h1>
+
+  <div id="message">
+    Camera scanner ready
+  </div>
+
+  <button id="startCamera" onclick="startScanner()">
+    START CAMERA
+  </button>
+
+  <button id="stopCamera" onclick="stopScanner()">
+    STOP CAMERA
+  </button>
+
+  <div id="reader"></div>
+
+  <div id="result"></div>
+
+<script>
+
+let scanner = null;
+let scanning = false;
+
+function startScanner() {
+
+  if (scanning) return;
+
+  document.getElementById("message").innerText =
+    "Starting camera...";
+
+  scanner = new Html5Qrcode("reader");
+
+  scanner.start(
+    { facingMode: "environment" },
+
+    {
+      fps: 10,
+      qrbox: {
+        width: 250,
+        height: 250
+      }
+    },
+
+    function(decodedText) {
+
+      if (!scanning) return;
+
+      scanning = false;
+
+      document.getElementById("result").innerText =
+        "QR CODE DETECTED";
+
+      document.getElementById("message").innerText =
+        decodedText;
+
+      scanner.pause(true);
+
+      setTimeout(function() {
+        scanning = true;
+        document.getElementById("message").innerText =
+          "Ready for next student";
+        document.getElementById("result").innerText = "";
+        scanner.resume();
+      }, 1500);
+
+    },
+
+    function(errorMessage) {
+      // Ignore normal scanning errors
+    }
+
+  ).then(function() {
+
+    scanning = true;
+
+    document.getElementById("message").innerText =
+      "READY — SCAN STUDENT";
+
+  }).catch(function(error) {
+
+    document.getElementById("message").innerText =
+      "Camera could not start. Check camera permissions.";
+
+    console.log(error);
+
+  });
+}
+
+
+function stopScanner() {
+
+  if (!scanner) return;
+
+  scanner.stop().then(function() {
+
+    scanning = false;
+
+    document.getElementById("message").innerText =
+      "Camera stopped";
+
+  }).catch(function(error) {
+
+    console.log(error);
+
+  });
+
+}
+
+</script>
+
+</body>
+</html>
