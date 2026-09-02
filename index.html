@@ -1,178 +1,466 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PE Mile Scanner</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 20px;
-      background: #f5f5f5;
-    }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    h1 {
-      font-size: 32px;
-      margin-bottom: 5px;
-    }
+<title>PE Mile Timer</title>
 
-    #message {
-      font-size: 22px;
-      margin: 15px 0;
-      min-height: 30px;
-    }
+<style>
 
-    #reader {
-      width: 100%;
-      max-width: 500px;
-      margin: 20px auto;
-      background: white;
-      border-radius: 12px;
-      padding: 10px;
-    }
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 20px;
+  background: #f5f5f5;
+}
 
-    button {
-      font-size: 22px;
-      padding: 15px 30px;
-      margin: 10px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-    }
+h1 {
+  font-size: 34px;
+  margin-bottom: 5px;
+}
 
-    #startCamera {
-      background: #1565c0;
-      color: white;
-    }
+#connection {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
 
-    #stopCamera {
-      background: #c62828;
-      color: white;
-    }
+.controls {
+  margin: 15px auto;
+}
 
-    #result {
-      font-size: 28px;
-      font-weight: bold;
-      margin-top: 20px;
-    }
-  </style>
+select {
+  font-size: 20px;
+  padding: 10px;
+  margin: 5px;
+}
 
-  <!-- QR scanner library -->
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+#timer {
+  font-size: 70px;
+  font-weight: bold;
+  margin: 25px 0;
+  font-family: monospace;
+}
+
+button {
+  font-size: 22px;
+  padding: 15px 25px;
+  margin: 8px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+#start {
+  background: #2e7d32;
+  color: white;
+}
+
+#reset {
+  background: #c62828;
+  color: white;
+}
+
+#scanner {
+  background: #1565c0;
+  color: white;
+}
+
+#status {
+  font-size: 22px;
+  margin: 20px;
+  min-height: 30px;
+}
+
+#results {
+  max-width: 600px;
+  margin: 20px auto;
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.result {
+  font-size: 19px;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+#count {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+</style>
 
 </head>
 
 <body>
 
-  <h1>PE MILE SCANNER</h1>
+<h1>PE MILE TIMER</h1>
 
-  <div id="message">
-    Camera scanner ready
-  </div>
+<div id="connection">
+  ● ONLINE
+</div>
 
-  <button id="startCamera" onclick="startScanner()">
-    START CAMERA
-  </button>
+<div class="controls">
 
-  <button id="stopCamera" onclick="stopScanner()">
-    STOP CAMERA
-  </button>
+  <label>Period:</label>
 
-  <div id="reader"></div>
+  <select id="period">
+    <option>1</option>
+    <option>2</option>
+    <option>3</option>
+    <option>4</option>
+    <option>5</option>
+    <option>6</option>
+    <option>7</option>
+  </select>
 
-  <div id="result"></div>
+  <label>Mile:</label>
+
+  <select id="mile">
+    <option>1</option>
+    <option>2</option>
+    <option>3</option>
+  </select>
+
+</div>
+
+<div id="timer">
+  00:00.00
+</div>
+
+<button id="start" onclick="startTimer()">
+  START MILE
+</button>
+
+<button id="reset" onclick="resetTimer()">
+  RESET
+</button>
+
+<div id="status"></div>
+
+<div id="count">
+  Results Saved: 0
+</div>
+
+<div id="results">
+
+  <h2>Finishers</h2>
+
+  <div id="list"></div>
+
+</div>
 
 <script>
 
-let scanner = null;
-let scanning = false;
+let startTime = null;
+let running = false;
+let timerInterval = null;
 
-function startScanner() {
+let results = [];
 
-  if (scanning) return;
 
-  document.getElementById("message").innerText =
-    "Starting camera...";
+// ----------------------------------
+// LOAD SAVED RESULTS
+// ----------------------------------
 
-  scanner = new Html5Qrcode("reader");
+function loadResults() {
 
-  scanner.start(
-    { facingMode: "environment" },
+  const saved = localStorage.getItem("peMileResults");
 
-    {
-      fps: 10,
-      qrbox: {
-        width: 250,
-        height: 250
-      }
-    },
+  if (saved) {
+    results = JSON.parse(saved);
+  }
 
-    function(decodedText) {
+  displayResults();
+}
 
-      if (!scanning) return;
 
-      scanning = false;
+// ----------------------------------
+// SAVE RESULTS LOCALLY
+// ----------------------------------
 
-      document.getElementById("result").innerText =
-        "QR CODE DETECTED";
+function saveResults() {
 
-      document.getElementById("message").innerText =
-        decodedText;
+  localStorage.setItem(
+    "peMileResults",
+    JSON.stringify(results)
+  );
 
-      scanner.pause(true);
+}
 
-      setTimeout(function() {
-        scanning = true;
-        document.getElementById("message").innerText =
-          "Ready for next student";
-        document.getElementById("result").innerText = "";
-        scanner.resume();
-      }, 1500);
 
-    },
+// ----------------------------------
+// TIMER
+// ----------------------------------
 
-    function(errorMessage) {
-      // Ignore normal scanning errors
+function startTimer() {
+
+  if (running) return;
+
+  startTime = Date.now();
+
+  running = true;
+
+  document.getElementById("start").innerText =
+    "RUNNING...";
+
+  timerInterval = setInterval(
+    updateTimer,
+    10
+  );
+
+}
+
+
+function updateTimer() {
+
+  if (!running) return;
+
+  const elapsed =
+    Date.now() - startTime;
+
+  displayTime(elapsed);
+
+}
+
+
+function displayTime(elapsed) {
+
+  const minutes =
+    Math.floor(elapsed / 60000);
+
+  const seconds =
+    Math.floor(
+      (elapsed % 60000) / 1000
+    );
+
+  const hundredths =
+    Math.floor(
+      (elapsed % 1000) / 10
+    );
+
+  document.getElementById("timer").innerText =
+    String(minutes).padStart(2, "0") +
+    ":" +
+    String(seconds).padStart(2, "0") +
+    "." +
+    String(hundredths).padStart(2, "0");
+
+}
+
+
+// ----------------------------------
+// RESET TIMER
+// ----------------------------------
+
+function resetTimer() {
+
+  if (
+    results.length > 0 &&
+    !confirm(
+      "Reset the timer? Saved results will remain."
+    )
+  ) {
+    return;
+  }
+
+  running = false;
+
+  clearInterval(timerInterval);
+
+  startTime = null;
+
+  document.getElementById("timer").innerText =
+    "00:00.00";
+
+  document.getElementById("start").innerText =
+    "START MILE";
+
+  document.getElementById("status").innerText =
+    "";
+
+}
+
+
+// ----------------------------------
+// SAVE A FINISH
+// ----------------------------------
+
+function recordFinish(
+  firstName,
+  lastName,
+  grade
+) {
+
+  if (!running) {
+
+    document.getElementById("status").innerText =
+      "Start the mile first.";
+
+    return;
+
+  }
+
+  const elapsed =
+    Date.now() - startTime;
+
+  const minutes =
+    Math.floor(elapsed / 60000);
+
+  const seconds =
+    Math.floor(
+      (elapsed % 60000) / 1000
+    );
+
+  const hundredths =
+    Math.floor(
+      (elapsed % 1000) / 10
+    );
+
+  const timeString =
+    String(minutes).padStart(2, "0") +
+    ":" +
+    String(seconds).padStart(2, "0") +
+    "." +
+    String(hundredths).padStart(2, "0");
+
+
+  const record = {
+
+    date:
+      new Date().toISOString(),
+
+    period:
+      document.getElementById("period").value,
+
+    mile:
+      document.getElementById("mile").value,
+
+    firstName:
+      firstName,
+
+    lastName:
+      lastName,
+
+    grade:
+      grade,
+
+    time:
+      timeString,
+
+    seconds:
+      elapsed / 1000
+
+  };
+
+
+  results.push(record);
+
+  saveResults();
+
+  displayResults();
+
+
+  document.getElementById("status").innerText =
+    firstName +
+    " " +
+    lastName +
+    " — " +
+    timeString +
+    " RECORDED";
+
+}
+
+
+// ----------------------------------
+// DISPLAY RESULTS
+// ----------------------------------
+
+function displayResults() {
+
+  const list =
+    document.getElementById("list");
+
+  list.innerHTML = "";
+
+  results.forEach(
+    function(result, index) {
+
+      const row =
+        document.createElement("div");
+
+      row.className = "result";
+
+      row.innerText =
+        (index + 1) +
+        ". " +
+        result.firstName +
+        " " +
+        result.lastName +
+        " — " +
+        result.time;
+
+      list.appendChild(row);
+
     }
+  );
 
-  ).then(function() {
 
-    scanning = true;
+  document.getElementById("count").innerText =
+    "Results Saved: " +
+    results.length;
 
-    document.getElementById("message").innerText =
-      "READY — SCAN STUDENT";
+}
 
-  }).catch(function(error) {
 
-    document.getElementById("message").innerText =
-      "Camera could not start. Check camera permissions.";
+// ----------------------------------
+// CONNECTION STATUS
+// ----------------------------------
 
-    console.log(error);
+function updateConnectionStatus() {
 
-  });
+  const connection =
+    document.getElementById("connection");
+
+  if (navigator.onLine) {
+
+    connection.innerText =
+      "● ONLINE";
+
+  } else {
+
+    connection.innerText =
+      "● OFFLINE — RESULTS SAVED ON DEVICE";
+
+  }
+
 }
 
 
-function stopScanner() {
+window.addEventListener(
+  "online",
+  updateConnectionStatus
+);
 
-  if (!scanner) return;
+window.addEventListener(
+  "offline",
+  updateConnectionStatus
+);
 
-  scanner.stop().then(function() {
 
-    scanning = false;
+// ----------------------------------
+// STARTUP
+// ----------------------------------
 
-    document.getElementById("message").innerText =
-      "Camera stopped";
+loadResults();
 
-  }).catch(function(error) {
-
-    console.log(error);
-
-  });
-
-}
+updateConnectionStatus();
 
 </script>
 
