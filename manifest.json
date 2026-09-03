@@ -1,0 +1,9 @@
+{
+  "name": "PE Mile Timer",
+  "short_name": "PE Mile",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#1565c0",
+  "description": "Offline PE mile timing and QR finish scanner"
+}
