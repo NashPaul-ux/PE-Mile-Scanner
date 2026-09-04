@@ -508,16 +508,41 @@ updateConnectionStatus();
 
   const html5QrCode = new Html5Qrcode("reader");
 
-  html5QrCode.start(
-    { facingMode: "user" },
-    {
-      fps: 10,
-      qrbox: { width: 250, height: 250 }
-    },
-    onScanSuccess
-  ).catch(error => {
+Html5Qrcode.getCameras()
+  .then(cameras => {
+
+    if (!cameras || cameras.length === 0) {
+      throw new Error("No cameras found");
+    }
+
+    let frontCamera = cameras[0];
+
+    for (const camera of cameras) {
+      const label = camera.label.toLowerCase();
+
+      if (
+        label.includes("front") ||
+        label.includes("user") ||
+        label.includes("selfie")
+      ) {
+        frontCamera = camera;
+        break;
+      }
+    }
+
+    return html5QrCode.start(
+      frontCamera.id,
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 }
+      },
+      onScanSuccess
+    );
+
+  })
+  .catch(error => {
     document.getElementById('scan-status').textContent =
-'Camera error: ' + error;
+      'Camera error: ' + error;
   });
 </script>
 <script>
