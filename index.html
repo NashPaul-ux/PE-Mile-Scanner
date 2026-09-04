@@ -461,7 +461,64 @@ window.addEventListener(
 loadResults();
 
 updateConnectionStatus();
+</script>
 
+<h2>QR Finish Scanner</h2>
+
+<div id="reader" style="width: 100%; max-width: 500px;"></div>
+
+<div id="scan-status" style="margin-top: 10px; font-weight: bold;">
+  Scanner ready
+</div>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+  let scanLocked = false;
+
+  function onScanSuccess(decodedText) {
+    if (scanLocked) return;
+    scanLocked = true;
+
+    const status = document.getElementById('scan-status');
+    const parts = decodedText.split('|');
+
+    if (parts.length !== 4) {
+      status.textContent = 'Invalid QR code';
+      setTimeout(() => {
+        scanLocked = false;
+        status.textContent = 'Scanner ready';
+      }, 1000);
+      return;
+    }
+
+    const lastName = parts[0].trim();
+    const firstName = parts[1].trim();
+    const grade = parts[2].trim();
+    const qrPeriod = parts[3].trim();
+
+    status.textContent =
+      'Scanned: ' + firstName + ' ' + lastName;
+
+    recordFinish(firstName, lastName, grade);
+
+    setTimeout(() => {
+      scanLocked = false;
+      status.textContent = 'Scanner ready';
+    }, 800);
+  }
+
+  const html5QrCode = new Html5Qrcode("reader");
+
+  html5QrCode.start(
+    { facingMode: "environment" },
+    {
+      fps: 10,
+      qrbox: { width: 250, height: 250 }
+    },
+    onScanSuccess
+  ).catch(error => {
+    document.getElementById('scan-status').textContent =
+'Camera error: ' + error;
+  });
 </script>
 <script>
   if ('serviceWorker' in navigator) {
