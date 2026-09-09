@@ -523,8 +523,7 @@ function onScanSuccess(decodedText) {
   recentScans[decodedText] = now;
 
   status.textContent =
-    'S
-    canned: ' + firstName + ' ' + lastName;
+  'Scanned: ' + firstName + ' ' + lastName;
 
   recordFinish(firstName, lastName, grade);
 playBeep();
