@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pe-mile-timer-v4';
+const CACHE_NAME = 'pe-mile-timer-v5';
 
 const FILES_TO_CACHE = [
   './',
