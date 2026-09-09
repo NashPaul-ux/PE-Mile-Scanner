@@ -153,7 +153,11 @@ button {
 <div id="count">
   Results Saved: 0
 </div>
-
+  
+<button onclick="clearResults()">
+  CLEAR RESULTS
+</button>
+  
 <div id="results">
 
   <h2>Finishers</h2>
@@ -200,6 +204,22 @@ function saveResults() {
 
 }
 
+  function clearResults() {
+  const confirmed = confirm(
+    "Are you sure you want to clear all saved results?"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  results = [];
+  localStorage.removeItem("peMileResults");
+  displayResults();
+
+  document.getElementById("status").innerText =
+    "All results cleared.";
+}
 
 // ----------------------------------
 // TIMER
