@@ -122,11 +122,17 @@ button {
 
   <label>Mile:</label>
 
-  <select id="mile">
-    <option>1</option>
-    <option>2</option>
-    <option>3</option>
-  </select>
+ <select id="mile">
+  <option value="1">Mile 1</option>
+  <option value="2">Mile 2</option>
+  <option value="3">Mile 3</option>
+  <option value="4">Mile 4</option>
+  <option value="5">Mile 5</option>
+  <option value="6">Mile 6</option>
+  <option value="7">Mile 7</option>
+  <option value="8">Mile 8</option>
+  <option value="9">Mile 9</option>
+</select>
 
 </div>
 
@@ -472,40 +478,61 @@ updateConnectionStatus();
 </div>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
-  let scanLocked = false;
+  
 
-  function onScanSuccess(decodedText) {
-    if (scanLocked) return;
-    scanLocked = true;
+ const recentScans = {};
 
-    const status = document.getElementById('scan-status');
-    const parts = decodedText.split('|');
+ function playBeep() {
+  const AudioContext =
+    window.AudioContext || window.webkitAudioContext;
 
-    if (parts.length !== 4) {
-      status.textContent = 'Invalid QR code';
-      setTimeout(() => {
-        scanLocked = false;
-        status.textContent = 'Scanner ready';
-      }, 1000);
-      return;
-    }
+  const audioCtx = new AudioContext();
+  const oscillator = audioCtx.createOscillator();
 
-    const lastName = parts[0].trim();
-    const firstName = parts[1].trim();
-    const grade = parts[2].trim();
-    const qrPeriod = parts[3].trim();
+  oscillator.connect(audioCtx.destination);
+  oscillator.frequency.value = 1000;
 
-    status.textContent =
-      'Scanned: ' + firstName + ' ' + lastName;
+  oscillator.start();
+  oscillator.stop(audioCtx.currentTime + 0.15);
+} 
+function onScanSuccess(decodedText) {
+  const now = Date.now();
 
-    recordFinish(firstName, lastName, grade);
-
-    setTimeout(() => {
-      scanLocked = false;
-      status.textContent = 'Scanner ready';
-    }, 800);
+  // Ignore the same QR code for 60 seconds
+  if (
+    recentScans[decodedText] &&
+    now - recentScans[decodedText] < 60000
+  ) {
+    return;
   }
 
+  const status = document.getElementById('scan-status');
+  const parts = decodedText.split('|');
+
+  if (parts.length !== 4) {
+    status.textContent = 'Invalid QR code';
+    return;
+  }
+
+  const lastName = parts[0].trim();
+  const firstName = parts[1].trim();
+  const grade = parts[2].trim();
+  const qrPeriod = parts[3].trim();
+
+  // Remember when this student was scanned
+  recentScans[decodedText] = now;
+
+  status.textContent =
+    'S
+    canned: ' + firstName + ' ' + lastName;
+
+  recordFinish(firstName, lastName, grade);
+playBeep();
+  
+  setTimeout(() => {
+    status.textContent = 'Scanner ready';
+  }, 1000);
+}
   const html5QrCode = new Html5Qrcode("reader");
 
 Html5Qrcode.getCameras()
