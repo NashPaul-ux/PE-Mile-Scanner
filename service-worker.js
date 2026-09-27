@@ -4,7 +4,7 @@ const FILES_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
+  './html5-qrcode.min.js'
 ];
 
 self.addEventListener('install', event => {
