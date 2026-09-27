@@ -465,7 +465,10 @@ function updateConnectionStatus() {
 
 window.addEventListener(
   "online",
-  updateConnectionStatus
+  function() {
+    updateConnectionStatus();
+    uploadQueuedResults();
+  }
 );
 
 window.addEventListener(
@@ -481,15 +484,31 @@ window.addEventListener(
 loadResults();
 
 updateConnectionStatus();
-updateConnectionStatus();
 
+uploadQueuedResults();
+  
 // ----------------------------------
 // SEND RESULT TO GOOGLE SHEETS
 // ----------------------------------
 
+function queueForUpload(record) {
+  const queue = JSON.parse(
+    localStorage.getItem("peMileUploadQueue") || "[]"
+  );
+
+  queue.push(record);
+
+  localStorage.setItem(
+    "peMileUploadQueue",
+    JSON.stringify(queue)
+  );
+}
+
+
 function sendToGoogleSheets(record) {
 
   if (!navigator.onLine) {
+    queueForUpload(record);
     return;
   }
 
@@ -497,16 +516,70 @@ function sendToGoogleSheets(record) {
     method: "POST",
     body: JSON.stringify(record)
   })
-  .then(response => response.text())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error("Upload failed");
+    }
+    return response.text();
+  })
   .then(data => {
     console.log("Google Sheets:", data);
   })
   .catch(error => {
     console.log("Google Sheets upload failed:", error);
+    queueForUpload(record);
   });
 
 }
 
+function uploadQueuedResults() {
+
+  if (!navigator.onLine) {
+    return;
+  }
+
+  const queue = JSON.parse(
+    localStorage.getItem("peMileUploadQueue") || "[]"
+  );
+
+  if (queue.length === 0) {
+    return;
+  }
+
+  const record = queue[0];
+
+  fetch(GOOGLE_SHEETS_URL, {
+    method: "POST",
+    body: JSON.stringify(record)
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error("Upload failed");
+    }
+
+    return response.text();
+  })
+  .then(data => {
+
+    queue.shift();
+
+    localStorage.setItem(
+      "peMileUploadQueue",
+      JSON.stringify(queue)
+    );
+
+    console.log("Queued result uploaded:", data);
+
+    // Upload the next queued result.
+    uploadQueuedResults();
+
+  })
+  .catch(error => {
+    console.log("Queued upload failed:", error);
+  });
+
+}
+  
 </script>
 
 <h2>QR Finish Scanner</h2>
